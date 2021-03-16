@@ -1,0 +1,23 @@
+{
+  "name": "dropbox-clone",
+  "version": "1.0.0",
+  "description": "Clone dropbox em node.js",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lukkas-lukkas/dropbox-clone.git"
+  },
+  "author": "Lucas Lima",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lukkas-lukkas/dropbox-clone/issues"
+  },
+  "homepage": "https://github.com/lukkas-lukkas/dropbox-clone#readme",
+  "dependencies": {
+    "ionicons": "^2.0.1",
+    "bootstrap": "^4.1.0"
+  }
+}
