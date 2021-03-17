@@ -25,6 +25,12 @@ class DropBoxController {
         firebase.initializeApp(firebaseConfig);
     }
 
+    uploadComplete(){
+        this.showModal(false);
+        this.inputFileEl.value = '';
+        this.inputFileEl.disabled = false;
+    }
+
     getFileIconView(file){
         switch (file.type) {
             case 'folder':
@@ -206,10 +212,22 @@ class DropBoxController {
         });
 
         this.inputFileEl.addEventListener('change', event=>{
-            this.uploadTask(event.target.files);
+            this.inputFileEl.disabled = true;
+            this.uploadTask(event.target.files).then(responses=>{
+                responses.forEach(resp=>{
+                    this.getFirebaseRef().push().set(resp.files['input-file']);
+                });
+                this.uploadComplete();
+            }).catch(err=>{
+                this.uploadComplete();
+                console.log(err);
+            });
             this.showModal();
-            this.inputFileEl.value = '';
         })
+    }
+
+    getFirebaseRef(){
+        return firebase.database().ref('files');
     }
 
     showModal(show = true){
@@ -226,7 +244,6 @@ class DropBoxController {
 
                 ajax.open('POST', '/upload');
                 ajax.onload = event=>{
-                    this.showModal(false);
                     try{
                         resolve(JSON.parse(ajax.responseText));
                     } catch{
@@ -235,7 +252,6 @@ class DropBoxController {
                 };
 
                 ajax.onerror = event => {
-                    this.showModal(false);
                     reject(event);
                 };
 
