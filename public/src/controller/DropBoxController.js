@@ -10,6 +10,31 @@ class DropBoxController {
         this.connectFirebase();
         this.initEvents();
         this.readFiles();
+        this.onSelectionChange = new Event('selectionchange');
+
+    }
+
+    initEvents(){
+        this.listFilesEl.addEventListener('selectionchange', event=>{
+            console.log('selectionchange');
+        })
+        this.btnSendFileEl.addEventListener('click', event=>{
+            this.inputFileEl.click();
+        });
+
+        this.inputFileEl.addEventListener('change', event=>{
+            this.inputFileEl.disabled = true;
+            this.uploadTask(event.target.files).then(responses=>{
+                responses.forEach(resp=>{
+                    this.getFirebaseRef().push().set(resp.files['input-file']);
+                });
+                this.uploadComplete();
+            }).catch(err=>{
+                this.uploadComplete();
+                console.log(err);
+            });
+            this.showModal();
+        })
     }
 
     connectFirebase(){
@@ -32,26 +57,6 @@ class DropBoxController {
         this.inputFileEl.value = '';
         this.inputFileEl.disabled = false;
     }    
-
-    initEvents(){
-        this.btnSendFileEl.addEventListener('click', event=>{
-            this.inputFileEl.click();
-        });
-
-        this.inputFileEl.addEventListener('change', event=>{
-            this.inputFileEl.disabled = true;
-            this.uploadTask(event.target.files).then(responses=>{
-                responses.forEach(resp=>{
-                    this.getFirebaseRef().push().set(resp.files['input-file']);
-                });
-                this.uploadComplete();
-            }).catch(err=>{
-                this.uploadComplete();
-                console.log(err);
-            });
-            this.showModal();
-        })
-    }
 
     getFirebaseRef(){
         return firebase.database().ref('files');
@@ -326,6 +331,8 @@ class DropBoxController {
 
     initEventsLi(li){
         li.addEventListener('click', event=>{
+
+            this.listFilesEl.dispatchEvent(this.onSelectionChange);
             if(event.shiftKey){
                 let firstLi = this.listFilesEl.querySelector('.selected');
 
