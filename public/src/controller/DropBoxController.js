@@ -6,8 +6,10 @@ class DropBoxController {
         this.progressBarEl = this.snackModalEl.querySelector('.mc-progress-bar-fg');
         this.nameFileEl = this.snackModalEl.querySelector('.filename');
         this.timeleftEl = this.snackModalEl.querySelector('.timeleft');
-        this.initEvents();
+        this.listFilesEl = document.querySelector('#list-of-files-and-directories');
         this.connectFirebase();
+        this.initEvents();
+        this.readFiles();
     }
 
     connectFirebase(){
@@ -29,6 +31,107 @@ class DropBoxController {
         this.showModal(false);
         this.inputFileEl.value = '';
         this.inputFileEl.disabled = false;
+    }    
+
+    initEvents(){
+        this.btnSendFileEl.addEventListener('click', event=>{
+            this.inputFileEl.click();
+        });
+
+        this.inputFileEl.addEventListener('change', event=>{
+            this.inputFileEl.disabled = true;
+            this.uploadTask(event.target.files).then(responses=>{
+                responses.forEach(resp=>{
+                    this.getFirebaseRef().push().set(resp.files['input-file']);
+                });
+                this.uploadComplete();
+            }).catch(err=>{
+                this.uploadComplete();
+                console.log(err);
+            });
+            this.showModal();
+        })
+    }
+
+    getFirebaseRef(){
+        return firebase.database().ref('files');
+    }
+
+    showModal(show = true){
+        this.snackModalEl.style.display = show ? 'block' : 'none';
+    }
+
+    uploadTask(files){
+        let promises = [];
+
+        [...files].forEach(file => {
+            promises.push(new Promise((resolve, reject)=>{
+                
+                let ajax = new XMLHttpRequest();
+
+                ajax.open('POST', '/upload');
+                ajax.onload = event=>{
+                    try{
+                        resolve(JSON.parse(ajax.responseText));
+                    } catch{
+                        reject(event);
+                    }
+                };
+
+                ajax.onerror = event => {
+                    reject(event);
+                };
+
+                ajax.upload.onprogress = event =>{
+                    this.uploadProgress(event, file);
+                };
+
+                let formData = new FormData;
+
+                formData.append('input-file', file);
+
+                this.startUploadTime = Date.now();
+
+                ajax.send(formData);
+            }))
+        });
+
+        return Promise.all(promises);
+
+    }
+
+    uploadProgress(event, file){
+        let timespent = Date.now() - this.startUploadTime;
+        let loaded = event.loaded;
+        let total = event.total;
+
+        let porcent = parseInt((loaded / total) * 100);
+
+        let timeleft = ((100 - porcent) * timespent) / porcent;
+
+        this.progressBarEl.style.width = `${porcent}%`;
+        this.nameFileEl.innerHTML = file.name;
+        this.timeleftEl.innerHTML = this.formatTimeToHuman(timeleft);
+    }
+
+    formatTimeToHuman(duration){
+        let seconds = parseInt((duration / 1000) % 60);
+        let minutes = parseInt((duration / (1000 * 60)) % 60);
+        let hours = parseInt((duration / (1000 * 60 * 60)) % 24);
+
+        if(hours > 0){
+            return `${hours} horas, ${minutes} minutos e ${seconds} segundos`;
+        }
+        
+        if(minutes > 0){
+            return `${minutes} minutos e ${seconds} segundos`;
+        }
+        
+        if(seconds > 0){
+            return `${seconds} segundos`;
+        } else {
+            return '';
+        }
     }
 
     getFileIconView(file){
@@ -197,113 +300,26 @@ class DropBoxController {
         }
     }
 
-    getFileView(file){
-        return `
-            <li>
-                ${this.getFileIconView(file)}
-                <div class="name text-center">${file.name}</div>
-            </li>
-        `
+    getFileView(file, key){
+        let li = document.createElement('li');
+        li.dataset.key = key;
+        li.innerHTML = `
+            ${this.getFileIconView(file)}
+            <div class="name text-center">${file.name}</div>
+        `;
+        return li;
     }
 
-    initEvents(){
-        this.btnSendFileEl.addEventListener('click', event=>{
-            this.inputFileEl.click();
-        });
+    readFiles(){
+        this.getFirebaseRef().on('value', snapshot=>{
+            this.listFilesEl.innerHTML = '';
+            snapshot.forEach(snapshotItem =>{
 
-        this.inputFileEl.addEventListener('change', event=>{
-            this.inputFileEl.disabled = true;
-            this.uploadTask(event.target.files).then(responses=>{
-                responses.forEach(resp=>{
-                    this.getFirebaseRef().push().set(resp.files['input-file']);
-                });
-                this.uploadComplete();
-            }).catch(err=>{
-                this.uploadComplete();
-                console.log(err);
+                let key = snapshotItem.key;
+                let data = snapshotItem.val();
+
+                this.listFilesEl.appendChild(this.getFileView(data, key));
             });
-            this.showModal();
         })
-    }
-
-    getFirebaseRef(){
-        return firebase.database().ref('files');
-    }
-
-    showModal(show = true){
-        this.snackModalEl.style.display = show ? 'block' : 'none';
-    }
-
-    uploadTask(files){
-        let promises = [];
-
-        [...files].forEach(file => {
-            promises.push(new Promise((resolve, reject)=>{
-                
-                let ajax = new XMLHttpRequest();
-
-                ajax.open('POST', '/upload');
-                ajax.onload = event=>{
-                    try{
-                        resolve(JSON.parse(ajax.responseText));
-                    } catch{
-                        reject(event);
-                    }
-                };
-
-                ajax.onerror = event => {
-                    reject(event);
-                };
-
-                ajax.upload.onprogress = event =>{
-                    this.uploadProgress(event, file);
-                };
-
-                let formData = new FormData;
-
-                formData.append('input-file', file);
-
-                this.startUploadTime = Date.now();
-
-                ajax.send(formData);
-            }))
-        });
-
-        return Promise.all(promises);
-
-    }
-
-    uploadProgress(event, file){
-        let timespent = Date.now() - this.startUploadTime;
-        let loaded = event.loaded;
-        let total = event.total;
-
-        let porcent = parseInt((loaded / total) * 100);
-
-        let timeleft = ((100 - porcent) * timespent) / porcent;
-
-        this.progressBarEl.style.width = `${porcent}%`;
-        this.nameFileEl.innerHTML = file.name;
-        this.timeleftEl.innerHTML = this.formatTimeToHuman(timeleft);
-    }
-
-    formatTimeToHuman(duration){
-        let seconds = parseInt((duration / 1000) % 60);
-        let minutes = parseInt((duration / (1000 * 60)) % 60);
-        let hours = parseInt((duration / (1000 * 60 * 60)) % 24);
-
-        if(hours > 0){
-            return `${hours} horas, ${minutes} minutos e ${seconds} segundos`;
-        }
-        
-        if(minutes > 0){
-            return `${minutes} minutos e ${seconds} segundos`;
-        }
-        
-        if(seconds > 0){
-            return `${seconds} segundos`;
-        } else {
-            return '';
-        }
     }
 }
