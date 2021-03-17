@@ -4,4 +4,5 @@
 
 ### Detalhes
 Projeto desenvolvido em node.js
-Utilização de Express
+Utilização de Express para inicialização do projeto
+Desenvolvimento orientado a objetos
