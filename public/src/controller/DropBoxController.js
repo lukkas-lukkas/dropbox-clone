@@ -22,6 +22,26 @@ class DropBoxController {
         return this.listFilesEl.querySelectorAll('.selected');
     }
 
+    removeTask(){
+        let promises = [];
+
+        this.getSelection().forEach(li=>{
+            let file = JSON.parse(li.dataset.file);
+            let key = li.dataset.key
+
+            let formData = new FormData;
+
+            formData.append('path', file.path);
+            formData.append('key', key);
+
+            let promise = this.ajax('/file', 'DELETE', formData);
+
+            promises.push(promise);
+        })
+
+        return Promise.all(promises);
+    }
+
     initEvents(){
         this.btnRename.addEventListener('click', event=>{
             let li = this.getSelection()[0];
@@ -35,8 +55,23 @@ class DropBoxController {
             }
         });
 
+        this.btnDelete.addEventListener('click', event=>{
+            this.removeTask().then(responses=>{
+
+                responses.forEach(resp=>{
+                    if(resp.fields.key){
+                        this.getFirebaseRef().child(resp.fields.key).remove();
+                    }
+                })
+
+            }).catch(err=>{
+
+                console.error(err);
+
+            });
+        });
+
         this.listFilesEl.addEventListener('selectionchange', event=>{
-            console.log(this.getSelection().length);
             switch (this.getSelection().length) {
                 case 0:
                     this.btnDelete.style.display = 'none';
@@ -64,7 +99,7 @@ class DropBoxController {
                 this.uploadComplete();
             }).catch(err=>{
                 this.uploadComplete();
-                console.log(err);
+                console.error(err);
             });
             this.showModal();
         })
@@ -103,39 +138,42 @@ class DropBoxController {
         let promises = [];
 
         [...files].forEach(file => {
-            promises.push(new Promise((resolve, reject)=>{
-                
-                let ajax = new XMLHttpRequest();
 
-                ajax.open('POST', '/upload');
-                ajax.onload = event=>{
-                    try{
-                        resolve(JSON.parse(ajax.responseText));
-                    } catch{
-                        reject(event);
-                    }
-                };
+            let formData = new FormData();
+            formData.append('input-file', file);
 
-                ajax.onerror = event => {
-                    reject(event);
-                };
+            let promise = this.ajax('/upload', 'POST', formData, ()=>{ this.uploadProgress(event, file) }, ()=>{this.startUploadTime = Date.now()});
 
-                ajax.upload.onprogress = event =>{
-                    this.uploadProgress(event, file);
-                };
-
-                let formData = new FormData;
-
-                formData.append('input-file', file);
-
-                this.startUploadTime = Date.now();
-
-                ajax.send(formData);
-            }))
+            promises.push(promise);
         });
 
         return Promise.all(promises);
 
+    }
+
+    ajax(url, method = 'GET', formData = new FormData, onprogress = ()=>{}, onloadstart = ()=>{}){
+        return new Promise((resolve, reject)=>{        
+            let ajax = new XMLHttpRequest();
+
+            ajax.open(method, url);
+            ajax.onload = event=>{
+                try{
+                    resolve(JSON.parse(ajax.responseText));
+                } catch{
+                    reject(event);
+                }
+            };
+
+            ajax.onerror = event => {
+                reject(event);
+            };
+
+            ajax.upload.onprogress = onprogress;
+
+            onloadstart();
+
+            ajax.send(formData);
+        })
     }
 
     uploadProgress(event, file){
