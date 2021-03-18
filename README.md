@@ -8,4 +8,4 @@ Utilização de Express para inicialização do projeto
 Desenvolvimento orientado a objetos
 Utilização de firebase como banco de dados
 Navegação entre pastar
-Upload de arquivos
+Upload de arquivos dentro do firebase storage
