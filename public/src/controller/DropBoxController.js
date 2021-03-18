@@ -188,13 +188,7 @@ class DropBoxController {
     connectFirebase(){
         // Your web app's Firebase configuration
         var firebaseConfig = {
-            apiKey: "AIzaSyD5s11u2rw7mK57VlVQM1la7D5PVPUPsHU",
-            authDomain: "dropbox-clone-fcc17.firebaseapp.com",
-            databaseURL: "https://dropbox-clone-fcc17-default-rtdb.firebaseio.com",
-            projectId: "dropbox-clone-fcc17",
-            storageBucket: "dropbox-clone-fcc17.appspot.com",
-            messagingSenderId: "475515245451",
-            appId: "1:475515245451:web:be5453c09c525ac3db558e"
+            //data your project of firebase
         };
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
@@ -258,31 +252,6 @@ class DropBoxController {
 
         return Promise.all(promises);
 
-    }
-
-    ajax(url, method = 'GET', formData = new FormData, onprogress = ()=>{}, onloadstart = ()=>{}){
-        return new Promise((resolve, reject)=>{        
-            let ajax = new XMLHttpRequest();
-
-            ajax.open(method, url);
-            ajax.onload = event=>{
-                try{
-                    resolve(JSON.parse(ajax.responseText));
-                } catch{
-                    reject(event);
-                }
-            };
-
-            ajax.onerror = event => {
-                reject(event);
-            };
-
-            ajax.upload.onprogress = onprogress;
-
-            onloadstart();
-
-            ajax.send(formData);
-        })
     }
 
     uploadProgress(event, file){
