@@ -1,7 +1,5 @@
 <h1> Dropbox Clone </h1>
 
-<h3> Projeto desenvolvido em Node.js </h3>
-
 <p><strong>Detalhes</strong></p>
 
 <p> Projeto desenvolvido em Node.js </p>
